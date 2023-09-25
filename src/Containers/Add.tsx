@@ -17,18 +17,10 @@ enum ScreenState {
   Final,
 }
  
-interface IFormValues {
-  name: string,
-  make: string,
-  colour: string,
-  code: string
-}
-
 const Add: FunctionComponent<AddProps> = () => {
   const [activeView, setActiveView] = useState(ScreenState.Make);
   const colours = ["blue", "red", "black", "orange"];
   const make = ["audi", "bmw", "vauxhall", "mercedes", "peugeot", "renault"];
-  const [formValues, setFormValues] = useState({} as IFormValues);
   let location = useLocation();
   const formRef = useRef<HTMLFormElement>(null);
   const [editModeActive, setEditModeActive] = useState(false);
@@ -40,13 +32,6 @@ const Add: FunctionComponent<AddProps> = () => {
     recordId: 0
   })
   let navigate = useNavigate();
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1
-  };
 
   useEffect(() => {
     if (location.state !== null) {
@@ -61,11 +46,6 @@ const Add: FunctionComponent<AddProps> = () => {
       setEditModeActive(true)
     }
   }, [])
-
-  const onSubmit = (event: any) => {
-    event.preventDefault();
-    setFormValues(formState);
-  };
 
   const handleNext = (event: any, screenState: ScreenState) => {
     event.preventDefault();
@@ -84,6 +64,7 @@ const Add: FunctionComponent<AddProps> = () => {
       navigate("/add");
     } catch(e) {
       console.log(e)
+      // would typicall add error handling and a user facing message on failure
     }
   }
   
@@ -95,23 +76,24 @@ const Add: FunctionComponent<AddProps> = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formValues.name,
-          make: formValues.make,
-          colour: formValues.colour,
-          code: formValues.code
+          name: formState.name,
+          make: formState.make,
+          colour: formState.colour,
+          code: formState.code
         }),
       });
-      // setFormState(undefined)
+      navigate("/list");
     } catch(e) {
       console.log(e)
+      // would typicall add error handling and a user facing message on failure
     }
   }
 
-  return (
-    <Form ref={formRef} onSubmit={onSubmit}>
-      <FormStageWrapper>
-        {/* <Slider {...settings}> */}
-          <div className="slide">
+  const renderForm = () => {
+    switch (activeView) {
+      case ScreenState.Make:
+        return (
+          <FormStageWrapper>
             <FormInputField onChange={e => setFormState({
               ...formState,
               name: e.target?.value
@@ -121,32 +103,44 @@ const Add: FunctionComponent<AddProps> = () => {
               make: e.target?.value
             })} />
             <Button
+              actionType="main"
               label="next"
               clickHandler={(e) => handleNext(e, ScreenState.Colour)}
             />
-          </div>
-          <div className="slide">
+          </FormStageWrapper>
+        );
+      case ScreenState.Colour:
+        return (
+          <FormStageWrapper>
             <FormDropdownField options={colours} field="colour" name="colour" value={formState.colour} onChange={e => setFormState({
               ...formState,
               colour: e.target?.value
             })}/>
             <Button
               label="next"
+              actionType="main"
               clickHandler={(e) => handleNext(e, ScreenState.Code)}
             />
-          </div>
-          <div className="slide">
+          </FormStageWrapper>
+        );
+      case ScreenState.Code:
+        return (
+          <FormStageWrapper>
             <FormInputField onChange={e => setFormState({
               ...formState,
               code: e.target?.value
             })} field="code" type="text" name="code" value={formState.code} />
             <Button
-              type="submit"
+              actionType="main"
               label="done"
+              clickHandler={(e) => handleNext(e, ScreenState.Final)}
             />
-          </div>
-          <div className="slide">
-            <p>Generated text</p>
+          </FormStageWrapper>
+        );
+      case ScreenState.Final:
+        return (
+          <FormStageWrapper>
+            <h2>Generated text</h2>
             <p>I have a {formState.make} and the colour is {formState.colour}.</p>
             {
               formState.colour === "red" &&
@@ -157,21 +151,30 @@ const Add: FunctionComponent<AddProps> = () => {
             <p>REF: {formState.code}</p>
             {
               editModeActive ?
-            <Button label="update record" clickHandler={updateRecord} /> :
-            <Button label="save" clickHandler={saveRecord} />
+            <Button actionType="main" type="button" label="update record" clickHandler={updateRecord} /> :
+            <Button actionType="main" type="button" label="save" clickHandler={saveRecord} />
             }
-          </div>
-        {/* </Slider> */}
-      </FormStageWrapper>
+          </FormStageWrapper>
+        );
+
+      default:
+        return <></>;
+    }
+  };
+
+  return (
+    <Form ref={formRef}>
+        {renderForm()}
     </Form>
   );
 };
 
 const FormStageWrapper = styled.div`
-  width: 800px;
-  margin: 0 auto;
-  .slick-track {
-  }
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: auto;
 `
 
 const Form = styled.form`

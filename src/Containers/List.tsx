@@ -9,6 +9,15 @@ interface ListProps {}
 const List: FunctionComponent<ListProps> = () => {
   let navigate = useNavigate();
   const [items, setItems] = useState([] as IItem[]);
+  const [isAuthorised, setIsAuthorised] = useState(false);
+
+  useEffect(() => {
+    if(!localStorage.getItem("loggedIn")) {
+      setIsAuthorised(false)
+    } else {
+      setIsAuthorised(true)
+    }
+  }, [])
 
   useEffect(() => {
     getItems()
@@ -52,13 +61,16 @@ const List: FunctionComponent<ListProps> = () => {
     }
   }
 
-  return <>
+  if(!isAuthorised) return <h2>Unauthorised</h2>
+
+  return <PageWrapper>
     <Header>
       <h2>List view</h2>
-      <Button label="Add" clickHandler={onAdd} />
+      <Button actionType="main" label="Add" clickHandler={onAdd} />
   </Header>
   <ItemsTable>
     <tbody>
+      {/* Would add loading states and empty list state in production  */}
     {
       items.map((item, index) => {
         return <tr key={item.RecordId}>
@@ -66,25 +78,42 @@ const List: FunctionComponent<ListProps> = () => {
             <td>{item.code}</td>
             <td>{item.make}</td>
             <td>{item.colour}</td>
-            <td>
-              <Button type="button" clickHandler={() => onEdit(index)} label="edit"/>
-              <Button type="button" clickHandler={() => onDelete(item.RecordId)} label="delete"/>
+            <td className="actions">
+              <Button actionType="edit" type="button" clickHandler={() => onEdit(index)} label="edit"/>
+              <Button actionType="delete" type="button" clickHandler={() => onDelete(item.RecordId)} label="delete"/>
             </td>
           </tr>
       })
     }
     </tbody>
   </ItemsTable>
-  </>;
+  </PageWrapper>;
 };
 
+const PageWrapper = styled.div`
+  padding: 50px;
+`
+
 const ItemsTable = styled.table`
-  width: 100%
+  width: 100%;
+  table-layout:fixed;
+  border-collapse: separate; 
+  border-spacing: 0 10px;
+  .actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end
+  }
 `
 
 const Header = styled.div`
+  margin-bottom: 30px;
   display: flex;
   justify-content: space-between;
+  h2 {
+    margin: 0;
+    padding: 0;
+  }
 `
 
 export default List;
